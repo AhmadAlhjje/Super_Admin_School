@@ -1,0 +1,78 @@
+/*
+ * Design system — "Light Educational SaaS".
+ * Single source of the palette, typography and radii of this dashboard.
+ * Tokens map 1:1 to the brand spec; use the semantic names (bg-surface, text-secondary…),
+ * never raw hex values in components.
+ */
+@import 'tailwindcss';
+@import '@fontsource-variable/cairo';
+
+/* Scan the whole app (src/) for class names (path relative to this file). */
+@source '../../';
+
+@theme {
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-text: #0f172a;
+  --color-secondary: #64748b;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-danger: #dc2626;
+  --color-border: #e2e8f0;
+
+  /* Subtle tints derived from the brand colors (badges, selected rows, callouts). */
+  --color-primary-soft: color-mix(in srgb, #2563eb 10%, white);
+  --color-success-soft: color-mix(in srgb, #16a34a 10%, white);
+  --color-warning-soft: color-mix(in srgb, #f59e0b 14%, white);
+  --color-danger-soft: color-mix(in srgb, #dc2626 10%, white);
+  --color-muted: #f1f5f9;
+
+  --font-sans: 'Cairo Variable', 'Cairo', system-ui, sans-serif;
+
+  --radius-card: 0.875rem;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.06);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Numbers, phone numbers and codes stay left-to-right inside RTL text. */
+  .ltr-nums {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
