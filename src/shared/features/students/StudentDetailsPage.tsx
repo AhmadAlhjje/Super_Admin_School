@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, ArchiveRestore, KeyRound, Pencil, Power, PowerOff, Smartphone, SmartphoneNfc } from 'lucide-react';
+import { KeyRound, Pencil, Power, PowerOff, RotateCcw, Smartphone, SmartphoneNfc, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
@@ -168,7 +168,7 @@ export function StudentDetailsPage() {
                     },
                     {
                       label: data.archived ? t('common.restore') : t('common.archive'),
-                      icon: data.archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />,
+                      icon: data.archived ? <RotateCcw className="size-4" /> : <Trash2 className="size-4" />,
                       tone: data.archived ? 'default' : 'danger',
                       onSelect: () =>
                         data.archived

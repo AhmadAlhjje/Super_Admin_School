@@ -31,7 +31,6 @@ const settings = {
   instituteName: 'معهد النور',
   institutePhone: null,
   studentSelfRegistration: false,
-  watermarkEnabled: true,
   offlineDownloadsEnabled: true,
   offlineLicenseDays: 14,
 };

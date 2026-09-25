@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, ArchiveRestore, Pencil, PlayCircle, RotateCcw, Upload } from 'lucide-react';
+import { Pencil, PlayCircle, RotateCcw, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
@@ -202,12 +202,12 @@ export function SessionPage() {
                             video.archivedAt
                               ? {
                                   label: t('common.restore'),
-                                  icon: <ArchiveRestore className="size-4" />,
+                                  icon: <RotateCcw className="size-4" />,
                                   onSelect: () => runAction(() => videos.restore(video.id), t('common.saved'), refresh),
                                 }
                               : {
                                   label: t('common.archive'),
-                                  icon: <Archive className="size-4" />,
+                                  icon: <Trash2 className="size-4" />,
                                   tone: 'danger',
                                   onSelect: () => setArchiving(video),
                                 },

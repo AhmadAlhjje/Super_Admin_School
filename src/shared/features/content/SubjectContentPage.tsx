@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArchiveRestore, ChevronLeft, ChevronRight, Pencil, Unlink, UserPlus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, RotateCcw, Unlink, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
@@ -201,7 +201,7 @@ export function SubjectContentPage() {
                             row.archivedAt
                               ? {
                                   label: t('common.restore'),
-                                  icon: <ArchiveRestore className="size-4" />,
+                                  icon: <RotateCcw className="size-4" />,
                                   onSelect: () =>
                                     runAction(
                                       () => subjectTeachersApi(api).restore(row.id),

@@ -394,7 +394,6 @@ export interface SystemSettings {
   instituteName: string;
   institutePhone: string | null;
   studentSelfRegistration: boolean;
-  watermarkEnabled: boolean;
   offlineDownloadsEnabled: boolean;
   offlineLicenseDays: number;
 }

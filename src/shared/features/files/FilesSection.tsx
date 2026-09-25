@@ -1,7 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Archive,
-  ArchiveRestore,
   Download,
   FileArchive,
   FileImage,
@@ -9,6 +7,8 @@ import {
   FileText,
   Pencil,
   Presentation,
+  RotateCcw,
+  Trash2,
   Upload,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -132,12 +132,12 @@ export function FilesSection({ scope, parentId, title }: { scope: FileScope; par
                         file.archivedAt
                           ? {
                               label: t('common.restore'),
-                              icon: <ArchiveRestore className="size-4" />,
+                              icon: <RotateCcw className="size-4" />,
                               onSelect: () => runAction(() => files.restore(file.id), t('common.saved'), refresh),
                             }
                           : {
                               label: t('common.delete'),
-                              icon: <Archive className="size-4" />,
+                              icon: <Trash2 className="size-4" />,
                               tone: 'danger',
                               onSelect: () => setDeleting(file),
                             },

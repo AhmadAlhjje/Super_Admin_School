@@ -25,9 +25,8 @@ const schema = z.object({
   instituteName: requiredText(120),
   institutePhone: z.string().trim().max(20),
   studentSelfRegistration: z.boolean(),
-  watermarkEnabled: z.boolean(),
   offlineDownloadsEnabled: z.boolean(),
-  offlineLicenseDays: z.number().int().min(1).max(90),
+  offlineLicenseDays: z.number().int().min(1).max(365),
 });
 type Values = z.infer<typeof schema>;
 
@@ -62,7 +61,7 @@ function SettingsForm({ settings }: { settings: SystemSettings }) {
     onError: (error) => toast.error(errorMessage(error)),
   });
 
-  const toggle = (name: 'studentSelfRegistration' | 'watermarkEnabled' | 'offlineDownloadsEnabled', label: string) => (
+  const toggle = (name: 'studentSelfRegistration' | 'offlineDownloadsEnabled', label: string) => (
     <Controller
       control={form.control}
       name={name}
@@ -96,9 +95,6 @@ function SettingsForm({ settings }: { settings: SystemSettings }) {
       <Card>
         <CardHeader title={t('settings.media')} />
         <div className="divide-y divide-border px-5">
-          <ToggleRow label={t('settings.watermark')} hint={t('settings.watermarkHint')}>
-            {toggle('watermarkEnabled', t('settings.watermark'))}
-          </ToggleRow>
           <ToggleRow label={t('settings.offline')} hint={t('settings.offlineHint')}>
             {toggle('offlineDownloadsEnabled', t('settings.offline'))}
           </ToggleRow>
@@ -110,7 +106,7 @@ function SettingsForm({ settings }: { settings: SystemSettings }) {
                   {...form.register('offlineLicenseDays', { valueAsNumber: true })}
                   type="number"
                   min={1}
-                  max={90}
+                  max={365}
                   className="w-32"
                   dir="ltr"
                 />

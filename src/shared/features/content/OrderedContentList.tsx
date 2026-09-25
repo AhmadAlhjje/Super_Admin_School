@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -75,12 +75,12 @@ export function OrderedContentList<T extends OrderedItem>({
               item.archivedAt
                 ? {
                     label: t('common.restore'),
-                    icon: <ArchiveRestore className="size-4" />,
+                    icon: <RotateCcw className="size-4" />,
                     onSelect: () => onRestore(item),
                   }
                 : {
                     label: t('common.archive'),
-                    icon: <Archive className="size-4" />,
+                    icon: <Trash2 className="size-4" />,
                     tone: 'danger',
                     onSelect: () => onArchive(item),
                   },
