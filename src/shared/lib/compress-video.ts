@@ -1,13 +1,18 @@
 /**
  * Compresses a lesson video in the browser before upload, so it uploads faster: H.264 in MP4, at
- * most 1080p, at a bitrate suited to lessons (the server then prepares the streaming versions as
- * before). The output is written to the browser's private disk storage, never held in memory.
+ * most 720p and 30 fps, at a bitrate suited to lessons, with a key frame every 2 s. That is what
+ * the server's largest quality needs, so the server takes it as it is and only prepares the
+ * smaller quality — processing is faster too. Written to the browser's private disk storage,
+ * never held in memory.
  *
  * It uses the browser's video encoder (WebCodecs), which browsers only offer on HTTPS sites (and
  * localhost). Elsewhere — and whenever compressing would not make the file clearly smaller, or
  * would lose the sound — the original file is uploaded unchanged.
  */
-const MAX_HEIGHT = 1080;
+const MAX_HEIGHT = 720;
+const MAX_FRAME_RATE = 30;
+/** Seconds between key frames: the server cuts 6-second segments. */
+const KEY_FRAME_INTERVAL = 2;
 const AUDIO_BITRATE = 128_000;
 const MIN_SAVING = 0.15;
 const TEMP_PREFIX = 'compressed-';
@@ -29,7 +34,7 @@ export function targetVideoBitrate(height: number): number {
   return 3_000_000;
 }
 
-/** Output size: the same aspect ratio, at most 1080 lines, even dimensions (encoder requirement). */
+/** Output size: the same aspect ratio, at most 720 lines, even dimensions (encoder requirement). */
 export function outputSize(width: number, height: number): { width: number; height: number } {
   const outHeight = Math.min(height, MAX_HEIGHT);
   const even = (value: number) => Math.max(2, Math.round(value / 2) * 2);
@@ -75,6 +80,7 @@ export async function compressVideo(
     const size = outputSize(video.displayWidth, video.displayHeight);
     const bitrate = targetVideoBitrate(size.height);
     if (!worthCompressing(file.size, duration, bitrate)) return skip('already light enough');
+    const sourceFrameRate = (await video.computePacketStats(120)).averagePacketRate;
     if (!(await mb.canEncodeVideo('avc', { ...size, bitrate }))) return skip('no H.264 encoder', size);
 
     tempName = `${TEMP_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2)}.mp4`;
@@ -91,6 +97,8 @@ export async function compressVideo(
         codec: 'avc',
         height: size.height,
         quality: new mb.Quality({ bitrate, bitrateMode: 'variable' }),
+        keyFrameInterval: KEY_FRAME_INTERVAL,
+        ...(sourceFrameRate > MAX_FRAME_RATE + 1 ? { frameRate: MAX_FRAME_RATE } : {}),
         forceTranscode: true,
       },
     });

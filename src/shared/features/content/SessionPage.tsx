@@ -6,7 +6,7 @@ import { useParams } from 'react-router';
 import { sessionsApi } from '../../api/endpoints/catalog';
 import { videosApi } from '../../api/endpoints/media';
 import type { Video } from '../../api/types';
-import { runAction } from '../../lib/actions';
+import { deletedWithUndo, runAction } from '../../lib/actions';
 import { formatDuration } from '../../lib/format';
 import { useApi } from '../../platform/platform-context';
 import { Button } from '../../ui/button';
@@ -17,7 +17,7 @@ import { EmptyState } from '../../ui/feedback';
 import { ConfirmDialog } from '../../ui/overlay';
 import { NameDescriptionModal } from '../catalog/NameDescriptionModal';
 import { FilesSection } from '../files/FilesSection';
-import { UploadTaskStatus } from '../uploads/UploadsPanel';
+import { PreparingStatus, UploadTaskStatus } from '../uploads/UploadsPanel';
 import { useUploads } from '../uploads/upload-manager';
 import { VideoPreviewModal } from '../videos/VideoPreviewModal';
 import { VideoStatusBadge } from '../videos/VideoStatusBadge';
@@ -28,6 +28,11 @@ function VideoRowStatus({ video, onPickFile }: { video: Video; onPickFile: () =>
   const { tasks } = useUploads();
   const task = [...tasks].reverse().find((item) => item.videoId === video.id);
   if (task && task.phase !== 'done') return <UploadTaskStatus task={task} />;
+  // Uploaded (maybe from another computer): the server is preparing it.
+  const preparing = video.upload?.preparingPercent;
+  if (video.displayStatus === 'UPLOADING' && preparing !== null && preparing !== undefined) {
+    return <PreparingStatus percent={preparing} />;
+  }
   if (video.displayStatus === 'FAILED') {
     return (
       <div className="flex flex-wrap items-center gap-2">
@@ -147,34 +152,27 @@ export function SessionPage() {
                     </Button>
                   }
                 />
-                {data.videos.length === 0 ? (
+                {active.length === 0 ? (
                   <EmptyState title={t('content.noVideos')} />
                 ) : (
                   <ul className="divide-y divide-border">
-                    {data.videos.map((video) => (
-                      <li
-                        key={video.id}
-                        className={`flex flex-wrap items-center gap-3 px-3 py-3 ${video.archivedAt ? 'opacity-60' : ''}`}
-                      >
-                        {!video.archivedAt ? (
-                          <ReorderButtons
-                            index={active.indexOf(video)}
-                            count={active.length}
-                            onMove={(from, to) =>
-                              runAction(
-                                () =>
-                                  videos.reorder(
-                                    sessionId,
-                                    moveItem(active, from, to).map((item) => item.id),
-                                  ),
-                                undefined,
-                                refresh,
-                              )
-                            }
-                          />
-                        ) : (
-                          <span className="w-16" />
-                        )}
+                    {active.map((video, index) => (
+                      <li key={video.id} className="flex flex-wrap items-center gap-3 px-3 py-3">
+                        <ReorderButtons
+                          index={index}
+                          count={active.length}
+                          onMove={(from, to) =>
+                            runAction(
+                              () =>
+                                videos.reorder(
+                                  sessionId,
+                                  moveItem(active, from, to).map((item) => item.id),
+                                ),
+                              undefined,
+                              refresh,
+                            )
+                          }
+                        />
                         <PlayCircle className="size-5 shrink-0 text-primary" aria-hidden />
                         <div className="min-w-40 flex-1">
                           <p className="font-semibold text-text">{video.title}</p>
@@ -185,7 +183,6 @@ export function SessionPage() {
                         <div className="w-full sm:w-64">
                           <VideoRowStatus video={video} onPickFile={() => pickFileFor(video)} />
                         </div>
-                        {video.archivedAt && <Badge>{t('common.archivedBadge')}</Badge>}
                         <ActionsMenu
                           actions={[
                             {
@@ -199,18 +196,12 @@ export function SessionPage() {
                               icon: <Pencil className="size-4" />,
                               onSelect: () => setRenaming(video),
                             },
-                            video.archivedAt
-                              ? {
-                                  label: t('common.restore'),
-                                  icon: <RotateCcw className="size-4" />,
-                                  onSelect: () => runAction(() => videos.restore(video.id), t('common.saved'), refresh),
-                                }
-                              : {
-                                  label: t('common.archive'),
-                                  icon: <Trash2 className="size-4" />,
-                                  tone: 'danger',
-                                  onSelect: () => setArchiving(video),
-                                },
+                            {
+                              label: t('common.archive'),
+                              icon: <Trash2 className="size-4" />,
+                              tone: 'danger',
+                              onSelect: () => setArchiving(video),
+                            },
                           ]}
                         />
                       </li>
@@ -264,7 +255,13 @@ export function SessionPage() {
               title={`${t('common.archive')}: ${archiving?.title ?? ''}`}
               body={t('content.archiveConfirm')}
               confirmLabel={t('common.archive')}
-              onConfirm={() => videos.archive(archiving!.id).then(refresh)}
+              onConfirm={() => {
+                const video = archiving!;
+                return videos.archive(video.id).then(() => {
+                  refresh();
+                  deletedWithUndo(t('common.deletedDone'), t('common.undo'), () => videos.restore(video.id), refresh);
+                });
+              }}
             />
           </>
         );

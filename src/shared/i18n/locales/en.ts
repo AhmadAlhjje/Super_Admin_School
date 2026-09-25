@@ -48,6 +48,8 @@ export const en: Translation = {
     language: 'العربية',
     noResults: 'No matching results',
     archivedBadge: 'Deleted',
+    deletedDone: 'Deleted',
+    undo: 'Undo',
     yes: 'Yes',
     no: 'No',
   },
@@ -334,6 +336,8 @@ export const en: Translation = {
     keepOpenInfo: 'Keep the site open until the upload finishes (you can move between dashboard pages).',
     notification: 'Uploading: {{title}}',
     backgroundFailed: 'The upload stopped. Choose the file again to finish it.',
+    preparingVideo: 'Uploaded ✓ Preparing the video for students {{percent}}%',
+    preparingCanClose: 'This happens on the server; you can close the site',
   },
   files: {
     upload: 'Upload file',

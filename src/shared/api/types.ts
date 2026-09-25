@@ -176,6 +176,8 @@ export interface UploadInfo {
   chunkSize: number;
   totalChunks: number;
   receivedChunks?: number[];
+  /** After the upload the server prepares the video for students (0-100); null otherwise. */
+  preparingPercent?: number | null;
 }
 
 export interface Video extends Archivable {

@@ -2,14 +2,16 @@
 import { gunzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { decodeUploadId, encodeUploadId } from '../src/shared/features/uploads/background';
+import { runPool } from '../src/shared/lib/pool';
 import { imageScale, isGzipCandidate, prepareFileUpload, savesEnough } from '../src/shared/lib/compress-file';
 import { outputSize, targetVideoBitrate, worthCompressing } from '../src/shared/lib/compress-video';
 
 describe('video compression decisions', () => {
-  it('keeps the aspect ratio, caps at 1080 lines and uses even sizes', () => {
-    expect(outputSize(3840, 2160)).toEqual({ width: 1920, height: 1080 });
+  it('keeps the aspect ratio, caps at 720 lines and uses even sizes', () => {
+    expect(outputSize(3840, 2160)).toEqual({ width: 1280, height: 720 });
+    expect(outputSize(1920, 1080)).toEqual({ width: 1280, height: 720 });
     expect(outputSize(1280, 720)).toEqual({ width: 1280, height: 720 });
-    expect(outputSize(1080, 1920)).toEqual({ width: 608, height: 1080 });
+    expect(outputSize(1080, 1920)).toEqual({ width: 406, height: 720 });
     expect(outputSize(853, 481)).toEqual({ width: 854, height: 482 });
   });
 
@@ -75,5 +77,32 @@ describe('background upload ids', () => {
     } as const;
     expect(decodeUploadId(encodeUploadId(file, 2))).toEqual(file);
     expect(decodeUploadId('something-else')).toBeNull();
+  });
+});
+
+describe('parallel uploads', () => {
+  it('runs at most N tasks at a time and stops at the first failure', async () => {
+    let running = 0;
+    let peak = 0;
+    const done: number[] = [];
+    await runPool([1, 2, 3, 4, 5, 6, 7, 8, 9], 4, async (item) => {
+      running += 1;
+      peak = Math.max(peak, running);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      done.push(item);
+      running -= 1;
+    });
+    expect(peak).toBe(4);
+    expect(done.sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    const started: number[] = [];
+    await expect(
+      runPool([1, 2, 3, 4, 5, 6, 7, 8], 2, async (item) => {
+        started.push(item);
+        await Promise.resolve();
+        if (item === 2) throw new Error('network');
+      }),
+    ).rejects.toThrow('network');
+    expect(started.length).toBeLessThan(8);
   });
 });

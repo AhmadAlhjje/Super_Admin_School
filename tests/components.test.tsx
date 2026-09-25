@@ -6,6 +6,7 @@ import { ApiError } from '../src/shared/api/errors';
 import type { AccessTree, StudentDetails } from '../src/shared/api/types';
 import { LoginPage } from '../src/shared/auth/LoginPage';
 import { StudentAccessPanel } from '../src/shared/features/access/StudentAccessPanel';
+import { SessionPage } from '../src/shared/features/content/SessionPage';
 import { StudentDetailsPage } from '../src/shared/features/students/StudentDetailsPage';
 import { StudentFormModal } from '../src/shared/features/students/StudentFormModal';
 import { UploadTaskStatus } from '../src/shared/features/uploads/UploadsPanel';
@@ -212,11 +213,11 @@ describe('upload status (user never sees internal stages)', () => {
     expect(screen.getByText('جاري ضغط الفيديو 30%')).toBeInTheDocument();
   });
 
-  it('shows "uploading" (not processing/encryption) while the server prepares the video', () => {
-    renderWithPlatform(<UploadTaskStatus task={{ ...base, phase: 'processing', percent: 100 }} />, {
+  it('after the upload, shows the server preparing the video (no technical stages)', () => {
+    renderWithPlatform(<UploadTaskStatus task={{ ...base, phase: 'processing', percent: 37 }} />, {
       api: fakeApi({}),
     });
-    expect(screen.getByText('جاري الرفع...')).toBeInTheDocument();
+    expect(screen.getByText('تم الرفع ✓ جاري تجهيز الفيديو للطلاب 37%')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/تشفير|FFmpeg|HLS|معالجة/);
   });
 
@@ -228,5 +229,91 @@ describe('upload status (user never sees internal stages)', () => {
     unmount();
     renderWithPlatform(<UploadTaskStatus task={{ ...base, phase: 'error', error: null }} />, { api: fakeApi({}) });
     expect(screen.getByRole('alert')).toHaveTextContent('فشل رفع الفيديو');
+  });
+});
+
+const sessionWithVideos = {
+  id: 'se1',
+  topicId: 't1',
+  title: 'الجلسة الأولى',
+  description: null,
+  archivedAt: null,
+  topic: {
+    id: 't1',
+    title: 'التفاضل',
+    subjectTeacher: {
+      id: 'st1',
+      subject: { id: 'sub1', name: 'الرياضيات', gradeId: 'g1' },
+      teacher: { id: 'te1', name: 'أحمد' },
+    },
+  },
+  videos: [
+    {
+      id: 'v1',
+      sessionId: 'se1',
+      title: 'مقدمة',
+      description: null,
+      sortOrder: 0,
+      status: 'READY',
+      displayStatus: 'READY',
+      durationSeconds: 600,
+      readyAt: null,
+      archivedAt: null,
+      upload: null,
+    },
+    {
+      id: 'v2',
+      sessionId: 'se1',
+      title: 'فيديو محذوف',
+      description: null,
+      sortOrder: 1,
+      status: 'READY',
+      displayStatus: 'READY',
+      durationSeconds: 300,
+      readyAt: null,
+      archivedAt: '2026-09-20T10:00:00.000Z',
+      upload: null,
+    },
+    {
+      id: 'v3',
+      sessionId: 'se1',
+      title: 'درس طويل',
+      description: null,
+      sortOrder: 2,
+      status: 'PROCESSING',
+      displayStatus: 'UPLOADING',
+      durationSeconds: null,
+      readyAt: null,
+      archivedAt: null,
+      upload: {
+        id: 'u3',
+        status: 'PROCESSING',
+        sizeBytes: 10,
+        chunkSize: 10,
+        totalChunks: 1,
+        preparingPercent: 40,
+      },
+    },
+  ],
+  files: [],
+};
+
+describe('session page (owner)', () => {
+  it('hides deleted videos and shows how far the server is in preparing a video', async () => {
+    const api = fakeApi(
+      { 'GET /sessions/se1': () => sessionWithVideos, 'GET /files': () => [] },
+      { loggedIn: user('OWNER') },
+    );
+    renderWithPlatform(
+      <Routes>
+        <Route path="/content/sessions/:sessionId" element={<SessionPage />} />
+      </Routes>,
+      { api, route: '/content/sessions/se1' },
+    );
+    expect(await screen.findByText('مقدمة')).toBeInTheDocument();
+    expect(screen.queryByText('فيديو محذوف')).not.toBeInTheDocument();
+    expect(screen.queryByText('محذوف')).not.toBeInTheDocument();
+    expect(screen.getByText('تم الرفع ✓ جاري تجهيز الفيديو للطلاب 40%')).toBeInTheDocument();
+    expect(screen.getByText('يتم التجهيز على الخادم، يمكنك إغلاق الموقع')).toBeInTheDocument();
   });
 });

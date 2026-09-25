@@ -7,7 +7,6 @@ import {
   FileText,
   Pencil,
   Presentation,
-  RotateCcw,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -15,13 +14,13 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { filesApi } from '../../api/endpoints/media';
 import type { ContentFile, FileKind, FileScope } from '../../api/types';
-import { runAction } from '../../lib/actions';
+import { deletedWithUndo, runAction } from '../../lib/actions';
 import { formatBytes, formatDate } from '../../lib/format';
 import { useApi } from '../../platform/platform-context';
 import { Button } from '../../ui/button';
 import { ActionsMenu, moveItem, ReorderButtons } from '../../ui/controls';
 import { QueryView } from '../../ui/data-table';
-import { Badge, Card, CardHeader } from '../../ui/display';
+import { Card, CardHeader } from '../../ui/display';
 import { EmptyState, SkeletonList } from '../../ui/feedback';
 import { ConfirmDialog } from '../../ui/overlay';
 import { NameDescriptionModal } from '../catalog/NameDescriptionModal';
@@ -46,7 +45,7 @@ export function FilesSection({ scope, parentId, title }: { scope: FileScope; par
   const queryKey = ['files', scope, parentId];
   const list = useQuery({
     queryKey,
-    queryFn: () => files.list(scope, parentId, 'all'),
+    queryFn: () => files.list(scope, parentId, 'active'),
   });
   const [uploading, setUploading] = useState(false);
   const [renaming, setRenaming] = useState<ContentFile | null>(null);
@@ -80,34 +79,29 @@ export function FilesSection({ scope, parentId, title }: { scope: FileScope; par
       <QueryView query={list} skeleton={<SkeletonList rows={2} />}>
         {(data) => {
           const active = data.filter((file) => !file.archivedAt);
-          if (data.length === 0) return <EmptyState title={t('content.noFiles')} />;
+          if (active.length === 0) return <EmptyState title={t('content.noFiles')} />;
           return (
             <ul className="divide-y divide-border">
-              {data.map((file) => {
+              {active.map((file, index) => {
                 const Icon = KIND_ICONS[file.kind];
                 return (
-                  <li
-                    key={file.id}
-                    className={`flex items-center gap-3 px-4 py-3 ${file.archivedAt ? 'opacity-60' : ''}`}
-                  >
-                    {!file.archivedAt && (
-                      <ReorderButtons
-                        index={active.indexOf(file)}
-                        count={active.length}
-                        onMove={(from, to) =>
-                          runAction(
-                            () =>
-                              files.reorder(
-                                scope,
-                                parentId,
-                                moveItem(active, from, to).map((f) => f.id),
-                              ),
-                            undefined,
-                            refresh,
-                          )
-                        }
-                      />
-                    )}
+                  <li key={file.id} className="flex items-center gap-3 px-4 py-3">
+                    <ReorderButtons
+                      index={index}
+                      count={active.length}
+                      onMove={(from, to) =>
+                        runAction(
+                          () =>
+                            files.reorder(
+                              scope,
+                              parentId,
+                              moveItem(active, from, to).map((f) => f.id),
+                            ),
+                          undefined,
+                          refresh,
+                        )
+                      }
+                    />
                     <Icon className="size-5 shrink-0 text-primary" aria-hidden />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-text">{file.title}</p>
@@ -116,7 +110,6 @@ export function FilesSection({ scope, parentId, title }: { scope: FileScope; par
                         <span className="ltr-nums">{formatBytes(file.sizeBytes)}</span> · {formatDate(file.createdAt)}
                       </p>
                     </div>
-                    {file.archivedAt && <Badge>{t('common.archivedBadge')}</Badge>}
                     <ActionsMenu
                       actions={[
                         {
@@ -129,18 +122,12 @@ export function FilesSection({ scope, parentId, title }: { scope: FileScope; par
                           icon: <Pencil className="size-4" />,
                           onSelect: () => setRenaming(file),
                         },
-                        file.archivedAt
-                          ? {
-                              label: t('common.restore'),
-                              icon: <RotateCcw className="size-4" />,
-                              onSelect: () => runAction(() => files.restore(file.id), t('common.saved'), refresh),
-                            }
-                          : {
-                              label: t('common.delete'),
-                              icon: <Trash2 className="size-4" />,
-                              tone: 'danger',
-                              onSelect: () => setDeleting(file),
-                            },
+                        {
+                          label: t('common.delete'),
+                          icon: <Trash2 className="size-4" />,
+                          tone: 'danger',
+                          onSelect: () => setDeleting(file),
+                        },
                       ]}
                     />
                   </li>
@@ -166,7 +153,13 @@ export function FilesSection({ scope, parentId, title }: { scope: FileScope; par
         title={`${t('common.delete')}: ${deleting?.title ?? ''}`}
         body={t('files.deleteConfirm')}
         confirmLabel={t('common.delete')}
-        onConfirm={() => files.archive(deleting!.id).then(refresh)}
+        onConfirm={() => {
+          const file = deleting!;
+          return files.archive(file.id).then(() => {
+            refresh();
+            deletedWithUndo(t('common.deletedDone'), t('common.undo'), () => files.restore(file.id), refresh);
+          });
+        }}
       />
     </Card>
   );

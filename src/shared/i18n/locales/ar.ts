@@ -46,6 +46,8 @@ export const ar = {
     language: 'English',
     noResults: 'لا توجد نتائج مطابقة',
     archivedBadge: 'محذوف',
+    deletedDone: 'تم الحذف',
+    undo: 'تراجع',
     yes: 'نعم',
     no: 'لا',
   },
@@ -328,6 +330,8 @@ export const ar = {
     keepOpenInfo: 'أبقِ الموقع مفتوحاً حتى يكتمل الرفع (يمكنك التنقل بين صفحات لوحة التحكم).',
     notification: 'رفع: {{title}}',
     backgroundFailed: 'توقف الرفع. اختر الملف من جديد لإكماله.',
+    preparingVideo: 'تم الرفع ✓ جاري تجهيز الفيديو للطلاب {{percent}}%',
+    preparingCanClose: 'يتم التجهيز على الخادم، يمكنك إغلاق الموقع',
   },
   files: {
     upload: 'رفع ملف',

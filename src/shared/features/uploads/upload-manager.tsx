@@ -11,6 +11,7 @@ import {
   videoCompressionSupported,
   type CompressedVideo,
 } from '../../lib/compress-video';
+import { runPool } from '../../lib/pool';
 import { useApi } from '../../platform/platform-context';
 import {
   backgroundUploadsPossible,
@@ -86,6 +87,8 @@ interface UploadManagerValue {
 const UploadManagerContext = createContext<UploadManagerValue | null>(null);
 
 const MAX_CHUNK_ATTEMPTS = 4;
+/** Chunks sent at the same time (browsers allow 6 connections per site). */
+const PARALLEL_CHUNKS = 4;
 const POLL_INTERVAL_MS = 4000;
 const DONE_VISIBLE_MS = 10_000;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -173,12 +176,13 @@ export function UploadManagerProvider({ children }: { children: ReactNode }) {
   /** The server prepares the video (shown as "uploading"): wait until it is READY. */
   const waitUntilReady = useCallback(
     async (key: string, videoId: string, sessionId: string) => {
-      patch(key, { phase: 'processing', percent: 100 });
+      patch(key, { phase: 'processing', percent: 0 });
       void refreshSession(sessionId);
       let completedHere = false;
       for (let round = 0; ; round += 1) {
         await sleep(POLL_INTERVAL_MS);
         const video = await videos.get(videoId);
+        patch(key, { percent: video.upload?.preparingPercent ?? 0 });
         if (video.displayStatus === 'READY') {
           finish(key);
           break;
@@ -218,24 +222,34 @@ export function UploadManagerProvider({ children }: { children: ReactNode }) {
         });
         await follow(key, upload);
       } else {
+        // Several chunks at once: a long connection to the server is used much better.
         let doneBytes = 0;
         for (const index of received) doneBytes += Math.min(chunkSize, file.size - index * chunkSize);
-        for (const index of missing) {
+        const sending = new Map<number, number>();
+        const report = () => {
+          let bytes = doneBytes;
+          for (const loaded of sending.values()) bytes += loaded;
+          patch(key, { percent: Math.min(99, (bytes / file.size) * 100) });
+        };
+        await runPool(missing, PARALLEL_CHUNKS, async (index) => {
           const chunk = file.slice(index * chunkSize, Math.min(file.size, (index + 1) * chunkSize));
           for (let attempt = 1; ; attempt += 1) {
             try {
               await videos.uploadChunk(plan.video.id, index, chunk, (event) => {
-                patch(key, { percent: Math.min(99, ((doneBytes + (event.loaded ?? 0)) / file.size) * 100) });
+                sending.set(index, event.loaded ?? 0);
+                report();
               });
               break;
             } catch (error) {
+              sending.delete(index);
               if (attempt >= MAX_CHUNK_ATTEMPTS) throw error;
               await sleep(1000 * 2 ** (attempt - 1));
             }
           }
+          sending.delete(index);
           doneBytes += chunk.size;
-          patch(key, { percent: Math.min(99, (doneBytes / file.size) * 100) });
-        }
+          report();
+        });
         await videos.complete(plan.video.id);
       }
       await waitUntilReady(key, plan.video.id, plan.video.sessionId);

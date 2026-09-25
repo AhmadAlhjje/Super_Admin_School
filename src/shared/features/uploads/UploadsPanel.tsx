@@ -26,14 +26,13 @@ export function UploadTaskStatus({ task }: { task: UploadTask }) {
     );
   }
   const percent = Math.floor(task.percent);
+  if (task.phase === 'processing') return <PreparingStatus percent={percent} />;
   const label =
     task.phase === 'compressing'
       ? task.kind === 'video'
         ? t('uploads.compressing', { percent })
         : t('uploads.preparing')
-      : task.phase === 'processing'
-        ? t('videos.uploadingShort')
-        : t('videos.uploading', { percent });
+      : t('videos.uploading', { percent });
   const hint =
     task.phase === 'compressing' || (task.phase === 'uploading' && !task.background)
       ? t('uploads.keepOpen')
@@ -43,17 +42,31 @@ export function UploadTaskStatus({ task }: { task: UploadTask }) {
   return (
     <div className="flex flex-col gap-1.5">
       <ProgressBar
-        value={
-          task.phase === 'processing' || (task.phase === 'compressing' && task.kind === 'file')
-            ? undefined
-            : task.percent
-        }
+        value={task.phase === 'compressing' && task.kind === 'file' ? undefined : task.percent}
         label={label}
       />
       <p className="text-xs text-secondary" aria-live="polite">
         {label}
       </p>
       {hint && <p className="text-xs text-secondary">{hint}</p>}
+    </div>
+  );
+}
+
+/**
+ * The upload is done and the server prepares the video for students (it can take a while for
+ * long lessons): the site may be closed meanwhile.
+ */
+export function PreparingStatus({ percent }: { percent: number }) {
+  const { t } = useTranslation();
+  const label = t('uploads.preparingVideo', { percent });
+  return (
+    <div className="flex flex-col gap-1.5">
+      <ProgressBar value={percent > 0 ? percent : undefined} label={label} />
+      <p className="text-xs font-semibold text-success" aria-live="polite">
+        {label}
+      </p>
+      <p className="text-xs text-secondary">{t('uploads.preparingCanClose')}</p>
     </div>
   );
 }
