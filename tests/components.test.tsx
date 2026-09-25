@@ -13,6 +13,13 @@ import type { UploadTask } from '../src/shared/features/uploads/upload-manager';
 import { adminConfig, fakeApi, ownerConfig, renderWithPlatform, user } from './helpers';
 
 describe('login page', () => {
+  it('first release: Arabic only, no language button', async () => {
+    renderWithPlatform(<LoginPage />, { api: fakeApi({}), route: '/login' });
+    expect(await screen.findByRole('button', { name: 'دخول' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'English' })).not.toBeInTheDocument();
+    expect(document.documentElement.dir).toBe('rtl');
+  });
+
   it('validates required fields before calling the API', async () => {
     const api = fakeApi({});
     renderWithPlatform(<LoginPage />, { api, route: '/login' });

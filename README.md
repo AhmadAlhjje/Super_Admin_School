@@ -4,7 +4,9 @@
 الطلاب (المكان الوحيد لإعادة تعيين الجهاز)، سجل التدقيق (قراءة فقط)، إعدادات النظام، إضافة
 إلى كل ما يديره صاحب المعهد.
 
-React 19 · Vite · TypeScript · TanStack Query · React Hook Form + Zod · Tailwind CSS 4 · i18next (عربي/إنجليزي).
+React 19 · Vite · TypeScript · TanStack Query · React Hook Form + Zod · Tailwind CSS 4 · i18next.
+بالعربية فقط في النسخة الأولى (الإنجليزية موجودة ومخفية؛ لإظهار زر اللغة: `ENGLISH_ENABLED = true` في
+`src/shared/i18n/i18n.ts`).
 
 ## التشغيل
 

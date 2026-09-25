@@ -5,12 +5,19 @@ import { en } from './locales/en';
 // Type-safe translation keys for every consumer of this module.
 import type {} from './i18next-types';
 
+/**
+ * First release: Arabic only — the language button is hidden and saved choices are ignored. The
+ * English translations stay; set this to true to offer English again.
+ */
+export const ENGLISH_ENABLED = false;
+
 export const SUPPORTED_LANGUAGES = ['ar', 'en'] as const;
 export type Language = (typeof SUPPORTED_LANGUAGES)[number];
 
 const STORAGE_KEY = 'edu.language';
 
 function initialLanguage(): Language {
+  if (!ENGLISH_ENABLED) return 'ar';
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'ar' || stored === 'en') return stored;
