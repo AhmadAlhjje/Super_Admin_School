@@ -1,0 +1,29 @@
+# Super admin dashboard on the VPS: http://<server>:6002 (step by step: README.md).
+#
+#   docker compose up -d --build
+#
+# Start the backend first: its docker-compose.yml creates the "edu-platform" network, on which
+# this site's Nginx forwards /api to the API (edu-api:6003). Update: git pull, then the same command.
+
+name: edu-admin-dashboard
+
+services:
+  web:
+    build: .
+    image: edu-admin-dashboard:latest
+    restart: unless-stopped
+    ports:
+      - '${DASHBOARD_PORT:-6002}:80'
+    environment:
+      API_UPSTREAM: ${API_UPSTREAM:-http://edu-api:6003}
+    networks: [edu]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+networks:
+  edu:
+    name: edu-platform
+    external: true

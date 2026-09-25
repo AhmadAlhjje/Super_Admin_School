@@ -1,0 +1,58 @@
+# The dashboard site (Vite build) + /api forwarded to the backend on the shared Docker network.
+# ${API_UPSTREAM} and ${MAX_UPLOAD_SIZE} are filled in from the environment when the container starts.
+
+# Video links carry signed tokens: log paths without their query strings.
+log_format edu '$remote_addr [$time_local] "$request_method $uri $server_protocol" $status $body_bytes_sent $request_time';
+
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    access_log /var/log/nginx/access.log edu;
+    server_tokens off;
+
+    # Docker's DNS: the backend is found even when it starts (or restarts) after this site.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $api ${API_UPSTREAM};
+
+    # File uploads (up to the backend's MAX_FILE_SIZE_MB) and video chunks.
+    client_max_body_size ${MAX_UPLOAD_SIZE};
+
+    gzip on;
+    gzip_min_length 1024;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    location /api/ {
+        proxy_pass $api;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Uploads stream straight to the API; long uploads and downloads are not cut off.
+        proxy_request_buffering off;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+
+    # Built files have content hashes in their names: cache them for a year.
+    location /assets/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    location = /nginx-health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Single-page app: every other path is index.html, never cached, so updates show at once.
+    location / {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache" always;
+        try_files $uri /index.html;
+    }
+}

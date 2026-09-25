@@ -23,15 +23,18 @@ function PreviewPlayer({ videoId }: { videoId: string }) {
       .then(([grant, { default: HlsPlayer }]) => {
         const element = videoRef.current;
         if (cancelled || !element) return;
+        // The link is relative to the API: resolve it against the address this dashboard uses
+        // (in Docker that is this site itself, whose Nginx forwards /api to the backend).
+        const manifestUrl = new URL(grant.manifestUrl, api.baseUrl || window.location.origin).href;
         if (HlsPlayer.isSupported()) {
           hls = new HlsPlayer();
           hls.on(HlsPlayer.Events.ERROR, (_event, data) => {
             if (data.fatal) setError(t('videos.previewError'));
           });
-          hls.loadSource(grant.manifestUrl);
+          hls.loadSource(manifestUrl);
           hls.attachMedia(element);
         } else if (element.canPlayType('application/vnd.apple.mpegurl')) {
-          element.src = grant.manifestUrl;
+          element.src = manifestUrl;
         } else {
           setError(t('videos.previewError'));
         }

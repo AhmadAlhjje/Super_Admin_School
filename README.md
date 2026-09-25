@@ -21,7 +21,7 @@ npm run dev
 
 | المتغير | المعنى |
 |---|---|
-| `VITE_API_BASE_URL` | عنوان الـ API (محلياً `http://localhost:4000`) |
+| `VITE_API_BASE_URL` | عنوان الـ API للتطوير المحلي (`http://localhost:4000`). لا يُستخدم على السيرفر |
 
 ## أوامر أخرى
 
@@ -30,10 +30,18 @@ npm run dev
 | `npm run build` | نسخة الإنتاج في `dist/` |
 | `npm test` · `npm run lint` · `npm run typecheck` | الاختبارات والفحص |
 
-## الرفع على السيرفر
+## الرفع على السيرفر (Docker)
 
-ضع في `.env`: `VITE_API_BASE_URL=https://api.your-domain.com` ثم `npm run build`، وانسخ محتوى
-`dist/` إلى `backend/deploy/sites/admin/` على السيرفر (التفاصيل في `backend/docs/deployment.md`).
+شغّل الـ backend أولاً (مشروعه ينشئ شبكة Docker المشتركة `edu-platform`). ثم داخل هذا المجلد على
+السيرفر:
+
+```bash
+docker compose up -d --build
+```
+
+تعمل اللوحة على `http://IP-السيرفر:6002`. الـ Docker يبني الموقع ثم يخدمه عبر Nginx الذي يمرّر
+طلبات `/api` إلى الـ backend داخل Docker — لا حاجة لأي إعداد لعنوان الـ API.
+للتحديث بعد `git pull`: نفس الأمر. التفاصيل: `backend/docs/deployment.md`.
 يُنصح بقصر الوصول لهذه اللوحة على عناوين IP معروفة.
 
 ## بنية المشروع
