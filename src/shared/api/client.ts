@@ -24,6 +24,8 @@ export interface ApiClient {
     body: FormData | Blob,
     onProgress?: (event: AxiosProgressEvent) => void,
     signal?: AbortSignal,
+    /** Prepared bodies: method and headers (e.g. a gzip-compressed multipart body sent with POST). */
+    options?: { method?: 'POST' | 'PUT'; headers?: Record<string, string> },
   ): Promise<T>;
   download(url: string): Promise<Blob>;
   setAccessToken(token: string | null): void;
@@ -113,13 +115,13 @@ export function createApiClient({ baseUrl, portal, onSessionEnded, adapter }: Op
     put: (url, body, config) => unwrap(http.put(url, body, config)),
     patch: (url, body) => unwrap(http.patch(url, body)),
     delete: (url) => unwrap(http.delete(url)),
-    upload: (url, body, onProgress, signal) =>
+    upload: (url, body, onProgress, signal, options) =>
       unwrap(
         http.request({
           url,
-          method: body instanceof FormData ? 'POST' : 'PUT',
+          method: options?.method ?? (body instanceof FormData ? 'POST' : 'PUT'),
           data: body,
-          headers: body instanceof FormData ? {} : { 'Content-Type': 'application/octet-stream' },
+          headers: options?.headers ?? (body instanceof FormData ? {} : { 'Content-Type': 'application/octet-stream' }),
           onUploadProgress: onProgress,
           signal,
           timeout: 0,

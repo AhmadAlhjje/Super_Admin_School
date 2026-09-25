@@ -5,7 +5,10 @@ import { IconButton } from '../../ui/button';
 import { ProgressBar } from '../../ui/feedback';
 import { useUploads, type UploadTask } from './upload-manager';
 
-/** User-facing upload state: only "uploading X%", "ready" or "failed" — never internal stages. */
+/**
+ * User-facing upload state — "compressing X%", "uploading X%", "ready" or "failed", never internal
+ * stages — plus whether the site may be closed (background upload) or must stay open.
+ */
 export function UploadTaskStatus({ task }: { task: UploadTask }) {
   const { t } = useTranslation();
   if (task.phase === 'done') {
@@ -23,15 +26,34 @@ export function UploadTaskStatus({ task }: { task: UploadTask }) {
     );
   }
   const percent = Math.floor(task.percent);
+  const label =
+    task.phase === 'compressing'
+      ? task.kind === 'video'
+        ? t('uploads.compressing', { percent })
+        : t('uploads.preparing')
+      : task.phase === 'processing'
+        ? t('videos.uploadingShort')
+        : t('videos.uploading', { percent });
+  const hint =
+    task.phase === 'compressing' || (task.phase === 'uploading' && !task.background)
+      ? t('uploads.keepOpen')
+      : task.background && task.phase === 'uploading'
+        ? t('uploads.canClose')
+        : null;
   return (
     <div className="flex flex-col gap-1.5">
       <ProgressBar
-        value={task.phase === 'processing' ? undefined : task.percent}
-        label={t('videos.uploading', { percent })}
+        value={
+          task.phase === 'processing' || (task.phase === 'compressing' && task.kind === 'file')
+            ? undefined
+            : task.percent
+        }
+        label={label}
       />
       <p className="text-xs text-secondary" aria-live="polite">
-        {task.phase === 'processing' ? t('videos.uploadingShort') : t('videos.uploading', { percent })}
+        {label}
       </p>
+      {hint && <p className="text-xs text-secondary">{hint}</p>}
     </div>
   );
 }
@@ -56,6 +78,12 @@ export function UploadsPanel() {
               <p className="truncate text-sm font-semibold text-text">{task.title}</p>
               <p className="mb-2 truncate text-xs text-secondary">
                 {task.fileName} · <span className="ltr-nums">{formatBytes(task.sizeBytes)}</span>
+                {task.originalBytes !== null && (
+                  <span className="text-success">
+                    {' '}
+                    · {t('uploads.compressedFrom', { size: formatBytes(task.originalBytes) })}
+                  </span>
+                )}
               </p>
               <UploadTaskStatus task={task} />
             </div>

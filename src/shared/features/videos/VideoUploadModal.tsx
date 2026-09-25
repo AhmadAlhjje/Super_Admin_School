@@ -1,4 +1,4 @@
-import { Film } from 'lucide-react';
+import { Film, Info } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatBytes } from '../../lib/format';
@@ -20,10 +20,11 @@ export function VideoUploadModal({
   sessionId: string;
 }) {
   const { t } = useTranslation();
-  const { start } = useUploads();
+  const { start, canCompress, canUploadInBackground } = useUploads();
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
+  const [compress, setCompress] = useState(true);
 
   const close = () => {
     setFile(null);
@@ -44,7 +45,7 @@ export function VideoUploadModal({
           <Button
             disabled={!file || !title.trim()}
             onClick={() => {
-              start({ sessionId, title: title.trim(), file: file! });
+              start({ sessionId, title: title.trim(), file: file!, compress });
               close();
             }}
           >
@@ -84,6 +85,24 @@ export function VideoUploadModal({
         <Field label={t('videos.title')} required>
           {(field) => <Input {...field} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />}
         </Field>
+        {canCompress && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border px-4 py-3">
+            <input
+              type="checkbox"
+              className="mt-1 size-4 accent-[var(--color-primary)]"
+              checked={compress}
+              onChange={(event) => setCompress(event.target.checked)}
+            />
+            <span>
+              <span className="block text-sm font-semibold text-text">{t('uploads.compress')}</span>
+              <span className="block text-xs text-secondary">{t('uploads.compressHint')}</span>
+            </span>
+          </label>
+        )}
+        <p className="flex items-start gap-2 text-xs text-secondary">
+          <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {canUploadInBackground ? t('uploads.backgroundInfo') : t('uploads.keepOpenInfo')}
+        </p>
       </div>
     </Modal>
   );

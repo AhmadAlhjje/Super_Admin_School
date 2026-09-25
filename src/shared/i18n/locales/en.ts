@@ -320,6 +320,21 @@ export const en: Translation = {
     previewTitle: 'Video preview',
     previewError: 'Could not play the video',
   },
+  uploads: {
+    compress: 'Compress the video before uploading (faster upload)',
+    compressHint:
+      'Makes the video smaller while keeping it clear. Done on this computer before uploading; long videos take a while.',
+    compressing: 'Compressing the video {{percent}}%',
+    preparing: 'Preparing...',
+    compressedFrom: 'was {{size}}',
+    keepOpen: 'Keep this page open',
+    canClose: 'You can close the site; the upload continues on its own',
+    backgroundInfo:
+      'Once the upload starts you can close the site and the browser finishes it on its own (keep the page open only while the video is compressed).',
+    keepOpenInfo: 'Keep the site open until the upload finishes (you can move between dashboard pages).',
+    notification: 'Uploading: {{title}}',
+    backgroundFailed: 'The upload stopped. Choose the file again to finish it.',
+  },
   files: {
     upload: 'Upload file',
     chooseFile: 'Choose a file',

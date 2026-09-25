@@ -174,19 +174,35 @@ describe('student form', () => {
 describe('upload status (user never sees internal stages)', () => {
   const base: UploadTask = {
     key: 'k',
+    kind: 'video',
     videoId: 'v',
     sessionId: 's',
     title: 'شرح',
     fileName: 'a.mp4',
     sizeBytes: 10,
+    originalBytes: null,
     phase: 'uploading',
     percent: 64.4,
+    background: false,
     error: null,
   };
 
-  it('shows the upload percentage', () => {
+  it('shows the upload percentage, and that the page must stay open', () => {
     renderWithPlatform(<UploadTaskStatus task={base} />, { api: fakeApi({}) });
     expect(screen.getByText('جاري الرفع 64%')).toBeInTheDocument();
+    expect(screen.getByText('أبقِ هذه الصفحة مفتوحة')).toBeInTheDocument();
+  });
+
+  it('says the site can be closed once the browser uploads in the background', () => {
+    renderWithPlatform(<UploadTaskStatus task={{ ...base, background: true }} />, { api: fakeApi({}) });
+    expect(screen.getByText('يمكنك إغلاق الموقع، سيكمل الرفع وحده')).toBeInTheDocument();
+  });
+
+  it('shows the compression progress of a video', () => {
+    renderWithPlatform(<UploadTaskStatus task={{ ...base, phase: 'compressing', percent: 30.2 }} />, {
+      api: fakeApi({}),
+    });
+    expect(screen.getByText('جاري ضغط الفيديو 30%')).toBeInTheDocument();
   });
 
   it('shows "uploading" (not processing/encryption) while the server prepares the video', () => {

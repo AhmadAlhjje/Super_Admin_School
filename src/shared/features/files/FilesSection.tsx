@@ -150,13 +150,7 @@ export function FilesSection({ scope, parentId, title }: { scope: FileScope; par
           );
         }}
       </QueryView>
-      <FileUploadModal
-        open={uploading}
-        onOpenChange={setUploading}
-        scope={scope}
-        parentId={parentId}
-        onUploaded={refresh}
-      />
+      <FileUploadModal open={uploading} onOpenChange={setUploading} scope={scope} parentId={parentId} />
       <NameDescriptionModal
         open={renaming !== null}
         onOpenChange={(open) => !open && setRenaming(null)}

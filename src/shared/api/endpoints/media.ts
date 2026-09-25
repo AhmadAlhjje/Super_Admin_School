@@ -1,8 +1,15 @@
 import type { AxiosProgressEvent } from 'axios';
 import type { ApiClient } from '../client';
+import type { PreparedUpload } from '../../lib/compress-file';
 import type { ContentFile, FileScope, LifecycleFilter, PlaybackGrant, UploadInfo, Video } from '../types';
 
-export interface VideoUploadPlan {
+/** Lets an upload continue without the access token (background uploads, header X-Upload-Token). */
+export interface UploadToken {
+  uploadToken: string;
+  uploadTokenExpiresAt: string;
+}
+
+export interface VideoUploadPlan extends UploadToken {
   video: Video;
   upload: UploadInfo & { receivedChunks: number[] };
 }
@@ -51,4 +58,17 @@ export const filesApi = (api: ApiClient) => ({
   restore: (id: string) => api.post<ContentFile>(`/files/${id}/restore`),
   reorder: (scope: FileScope, parentId: string, ids: string[]) => api.put('/files/reorder', { scope, parentId, ids }),
   download: (id: string) => api.download(`/files/${id}/download`),
+  /** Sends a body made by `prepareFileUpload` (possibly compressed). */
+  uploadPrepared: (
+    scope: FileScope,
+    parentId: string,
+    prepared: PreparedUpload,
+    onProgress?: (e: AxiosProgressEvent) => void,
+  ) =>
+    api.upload<ContentFile>(`/files?scope=${scope}&parentId=${parentId}`, prepared.body, onProgress, undefined, {
+      method: 'POST',
+      headers: prepared.headers,
+    }),
+  uploadToken: (scope: FileScope, parentId: string) =>
+    api.post<UploadToken>(`/files/upload-token?scope=${scope}&parentId=${parentId}`),
 });
